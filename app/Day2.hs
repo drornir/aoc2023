@@ -5,6 +5,7 @@ import Data.Text (Text, breakOn, drop, pack, split, strip, unpack)
 import System.IO (readFile)
 import Prelude hiding (drop)
 
+-- 2771
 main :: IO ()
 main = do
   file <- readFile "inputs/day2.txt"
