@@ -40,7 +40,7 @@ minDrawOfGame g = foldl' maxOfEachColor (Draw 0 0 0) (draws g)
 
 maxOfEachColor :: Draw -> Draw -> Draw
 maxOfEachColor dmax d =
-  d
+  Draw
     { green = max (green dmax) (green d),
       red = max (red dmax) (red d),
       blue = max (blue dmax) (blue d)
