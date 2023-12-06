@@ -36,8 +36,8 @@ executable day1
     default-language: Haskell2010
 
 
-executable day2
-    main-is:          Day2.hs
+executable day1p2
+    main-is:          Day1p2.hs
     other-extensions:
         QuasiQuotes
     build-depends:    
