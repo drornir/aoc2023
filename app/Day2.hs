@@ -17,6 +17,8 @@ data Draw = Draw
   }
   deriving (Show)
 
+type MaxDraw = Draw
+
 data Game = Game
   { _id :: Integer,
     draws :: [Draw]
@@ -26,7 +28,20 @@ data Game = Game
 part1 file =
   let ls = lines file
       games = map toGame ls
-   in take 5 games
+      maxDraw = (Draw {red = 12, green = 13, blue = 14})
+   in sum $ map (idsOfPossibleGame maxDraw) games
+
+idsOfPossibleGame :: MaxDraw -> Game -> Integer
+idsOfPossibleGame md g =
+  if all (isPossibleDraw md) (draws g)
+    then _id g
+    else 0
+
+isPossibleDraw :: MaxDraw -> Draw -> Bool
+isPossibleDraw md dr =
+  (green dr <= green md)
+    && (red dr <= red md)
+    && (blue dr <= blue md)
 
 toGame :: String -> Game
 toGame l =
