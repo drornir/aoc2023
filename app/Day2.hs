@@ -1,15 +1,16 @@
 module Main where
 
-import Data.List (isPrefixOf)
+import Data.List (foldl', isPrefixOf)
 import Data.Text (Text, breakOn, drop, pack, split, strip, unpack)
 import System.IO (readFile)
 import Prelude hiding (drop)
 
--- 2771
 main :: IO ()
 main = do
   file <- readFile "inputs/day2.txt"
-  print $ part1 file
+  let ls = lines file
+      games = map toGame ls
+  print $ part2 games
 
 data Draw = Draw
   { green :: Integer,
@@ -26,10 +27,29 @@ data Game = Game
   }
   deriving (Show)
 
-part1 file =
-  let ls = lines file
-      games = map toGame ls
-      maxDraw = (Draw {red = 12, green = 13, blue = 14})
+-- 70924
+part2 :: [Game] -> Integer
+part2 games =
+  sum $ map (powerOfDraw . minDrawOfGame) games
+
+powerOfDraw :: Draw -> Integer
+powerOfDraw (Draw x y z) = x * y * z
+
+minDrawOfGame :: Game -> Draw
+minDrawOfGame g = foldl' maxOfEachColor (Draw 0 0 0) (draws g)
+
+maxOfEachColor :: Draw -> Draw -> Draw
+maxOfEachColor dmax d =
+  d
+    { green = max (green dmax) (green d),
+      red = max (red dmax) (red d),
+      blue = max (blue dmax) (blue d)
+    }
+
+-- 2771
+part1 :: [Game] -> Integer
+part1 games =
+  let maxDraw = (Draw {red = 12, green = 13, blue = 14})
    in sum $ map (idsOfPossibleGame maxDraw) games
 
 idsOfPossibleGame :: MaxDraw -> Game -> Integer
@@ -44,6 +64,7 @@ isPossibleDraw md dr =
     && (red dr <= red md)
     && (blue dr <= blue md)
 
+--
 toGame :: String -> Game
 toGame l =
   let (numStr, l') = breakOn (pack ":") $ drop (length "Game ") (pack l)
@@ -54,7 +75,7 @@ toDraws :: Text -> [Draw]
 toDraws l = map toDraw $ split (== ';') l
 
 toDraw :: Text -> Draw
-toDraw l = foldl fillDraw (Draw 0 0 0) $ split (== ',') l
+toDraw l = foldl' fillDraw (Draw 0 0 0) $ split (== ',') l
 
 fillDraw :: Draw -> Text -> Draw
 fillDraw d l =
