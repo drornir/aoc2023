@@ -63,6 +63,7 @@ executable day3
         
     build-depends:    
         base ^>=4.17.2.0,
-        text
+        text,
+        array
     hs-source-dirs:   app
     default-language: Haskell2010
