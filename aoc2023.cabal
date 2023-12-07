@@ -56,3 +56,13 @@ executable day2
         text
     hs-source-dirs:   app
     default-language: Haskell2010
+
+executable day3
+    main-is:          Day3.hs
+    -- other-extensions:
+        
+    build-depends:    
+        base ^>=4.17.2.0,
+        text
+    hs-source-dirs:   app
+    default-language: Haskell2010
