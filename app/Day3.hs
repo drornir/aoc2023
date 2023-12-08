@@ -6,6 +6,7 @@ module Main where
 import Data.Array (Array, array, bounds, indices, listArray, (!))
 import Data.Char (isDigit)
 import Data.List (foldl')
+import qualified Data.Map as Map
 import Debug.Trace (trace, traceShow)
 
 type Schematic = Array (Int, Int) Char
@@ -13,7 +14,7 @@ type Schematic = Array (Int, Int) Char
 main :: IO ()
 main =
   do
-    file <- readFile "inputs/day3.txt"
+    file <- readFile "inputs/day3_ex.txt"
     let sch = fileToSchematic file
     print $ part1 sch
 
@@ -26,10 +27,33 @@ fileToSchematic file =
       ((i0, j0), (i', j')) = schBounds
    in array schBounds [((i, j), c) | (i, l) <- zip [i0 .. i'] ls, (j, c) <- zip [j0 .. j'] l]
 
+--
+type Visited = Map.Map (Int, Int) ()
+
+part2 :: Schematic -> Integer
+part2 sch =
+  let (res, _) = foldl' f (0, Map.empty) $ indices sch
+   in res
+  where
+    f :: (Integer, Visited) -> (Int, Int) -> (Integer, Visited)
+    f (acc, m) (i, j)
+      | let c = (sch ! (i, j)) in isDigit c =
+          let (sm, m') = visitSchematic sch m (i, j)
+           in (acc + sm, m')
+      | otherwise = (acc, m)
+
+visitSchematic :: Schematic -> Visited -> (Int, Int) -> (Integer, Visited)
+visitSchematic sch m (i, j)
+  let 
+    c = sch ! (i, j)
+    m = Map.insert (i, j) () m
+    
+
+-- 533775
 part1 :: Schematic -> Integer
 part1 sch =
-  let (summ, _, _) = foldl' f (0, 0, False) $ indices sch
-   in summ
+  let (res, _, _) = foldl' f (0, 0, False) $ indices sch
+   in res
   where
     f :: (Integer, Integer, Bool) -> (Int, Int) -> (Integer, Integer, Bool)
     f (acc, numSoFar, surrounded) (i, j)
