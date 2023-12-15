@@ -53,7 +53,7 @@ findMatches card = List.foldl' f [] $ _wins card
         then winNum : acc
         else acc
 
---
+-- 8549735
 part2 :: [Card] -> Integer
 part2 cards =
   let len = toInteger $ List.length cards
