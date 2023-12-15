@@ -1,22 +1,32 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Use zipWith" #-}
-module Main where
+module Main (main) where
 
 import Data.Array (Array, array, bounds, indices, listArray, (!))
 import Data.Char (isDigit)
 import Data.List (foldl')
 import qualified Data.Map as Map
+import qualified Data.Maybe as Maybe
 import Debug.Trace (trace, traceShow)
-
-type Schematic = Array (Int, Int) Char
+import GHC.Base (Multiplicity (Many))
 
 main :: IO ()
 main =
   do
     file <- readFile "inputs/day3_ex.txt"
     let sch = fileToSchematic file
-    print $ part1 sch
+    print $ part2 sch
+
+type Schematic = Array (Int, Int) Char
+
+charAt :: Schematic -> (Int, Int) -> Char
+charAt sch (i, j)
+  | i < 0 || j < 0 = '.'
+  | i > width || j > height = '.'
+  | otherwise = sch ! (i, j)
+  where
+    (width, height) = snd $ bounds sch
 
 fileToSchematic :: String -> Schematic
 fileToSchematic file =
@@ -32,22 +42,62 @@ type Visited = Map.Map (Int, Int) ()
 
 part2 :: Schematic -> Integer
 part2 sch =
-  let (res, _) = foldl' f (0, Map.empty) $ indices sch
+  let res = foldl' f 0 $ indices sch
    in res
   where
-    f :: (Integer, Visited) -> (Int, Int) -> (Integer, Visited)
-    f (acc, m) (i, j)
-      | let c = (sch ! (i, j)) in isDigit c =
-          let (sm, m') = visitSchematic sch m (i, j)
-           in (acc + sm, m')
-      | otherwise = (acc, m)
+    -- Integer is sum of multiplications of numbers around cogs
+    f :: Integer -> (Int, Int) -> Integer
+    f acc (i, j)
+      | let c = (sch ! (i, j)) in c == '*' =
+          let sm = visitStar sch (i, j)
+           in (acc + sm)
+      | otherwise = acc
 
-visitSchematic :: Schematic -> Visited -> (Int, Int) -> (Integer, Visited)
-visitSchematic sch m (i, j)
-  let 
-    c = sch ! (i, j)
-    m = Map.insert (i, j) () m
-    
+visitStar :: Schematic -> (Int, Int) -> Integer
+visitStar sch (i, j) =
+  let c = sch ! (i, j)
+      numbersAround = findNumbersAround sch (i, j)
+   in if length numbersAround == 2
+        then foldl' (*) 1 numbersAround
+        else 0
+
+findNumbersAround :: Schematic -> (Int, Int) -> [Integer]
+findNumbersAround sch (i, j) =
+  let visited = Map.insert (i, j) () Map.empty :: Visited
+      surrounding =
+        [ (i + is, j + js)
+          | (is, js) <- [(x, y) | x <- [-1, 0, 1], y <- [-1, 0, 1]],
+            (is, js) /= (0, 0)
+        ]
+   in visit visited surrounding
+  where
+    visit :: Visited -> [(Int, Int)] -> [Integer]
+    visit _ [] = []
+    visit visited ((i, j) : idxs') = visit' visited [] ((i, j) : idxs')
+    visit' :: Visited -> [Integer] -> [(Int, Int)] -> [Integer]
+    visit' visited acc [] = acc
+    visit' visited acc ((i, j) : idxs') =
+      let visited' = Map.insert (i, j) () visited
+       in if Maybe.isJust (visited Map.!? (i, j))
+            then
+              let c = charAt sch (i, j)
+                  (visited'', num) = if isDigit c then discoverNumber visited' (i, j) else (visited', Maybe.Nothing)
+                  acc' = if Maybe.isJust num then Maybe.fromJust num : acc else acc
+               in visit' visited'' acc' idxs'
+            else visit' visited' acc idxs'
+      where
+        discoverNumber :: Visited -> (Int, Int) -> (Visited, Maybe.Maybe Integer)
+        discoverNumber visited (i, j) =
+          let (rightVisited, rightSide) = discoverRight visited "" (i, j)
+              (leftVisited, leftSide) = discoverLeft visited "" (i, j)
+              visited' = Map.union rightVisited $ Map.union leftVisited $ Map.insert (i, j) () visited
+           in (visited', Maybe.Just (read (leftSide ++ [charAt sch (i, j)] ++ rightSide) :: Integer))
+        discoverRight visited n (i, j)
+          | isDigit $ charAt sch (i, j + 1) = discoverRight (Map.insert (i, j + 1) () visited) (n ++ [charAt sch (i, j + 1)]) (i, j + 1)
+          | otherwise = (Map.insert (i, j) () visited, "")
+        discoverLeft visited n (i, j)
+          | isDigit $ charAt sch (i, j - 1) = discoverLeft (Map.insert (i, j - 1) () visited) (charAt sch (i, j + 1) : n) (i, j - 1)
+          | otherwise = (Map.insert (i, j) () visited, "")
 
 -- 533775
 part1 :: Schematic -> Integer
@@ -82,7 +132,7 @@ hasSurroundingSpecial sch (i, j) =
           | (i', j') <- surrounding,
             i' >= 0 && i' <= maxI && j' >= 0 && j' <= maxJ
         ]
-   in traceShow (i, j, surrounding, surrounding', (map f surrounding')) any f surrounding'
+   in traceShow (i, j, surrounding, surrounding', map f surrounding') any f surrounding'
   where
     f :: (Int, Int) -> Bool
     f (i, j) =
