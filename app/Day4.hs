@@ -14,7 +14,7 @@ import qualified Debug.Trace as Trace
 main :: IO ()
 main =
   do
-    file <- readFile "inputs/day4_ex.txt"
+    file <- readFile "inputs/day4.txt"
     print $ part2 $ fileToCards file
 
 data Card = Card
@@ -55,15 +55,16 @@ findMatches card = List.foldl' f [] $ _wins card
 
 --
 part2 :: [Card] -> Integer
-part2 [] = 0
-part2 (c : cx) =
-  let n = countWinningCards (c, cx)
-      rest = part2 cx
-   in Trace.traceShow ("part2", _num c, n, rest) (n + rest)
+part2 cards =
+  let len = toInteger $ List.length cards
+   in len + part2' cards
 
 part2' :: [Card] -> Integer
 part2' [] = 0
-part2' (c : cx) = countWinningCards (c, cx)
+part2' (c : cx) =
+  let n = countWinningCards (c, cx)
+      rest = part2' cx
+   in n + rest
 
 countWinningCards :: (Card, [Card]) -> Integer
 countWinningCards (current, nextCards) =
@@ -71,22 +72,8 @@ countWinningCards (current, nextCards) =
       winnings = length matches
       newCards = List.take winnings nextCards
       newCardsZippedWithRest = List.zip newCards $ map (\i -> List.drop i nextCards) [1 .. winnings]
-      -- [ (c, cx) | c <- newCards, cx <- map (\i -> List.drop i nextCards) [1 .. 5]
-      -- ]
       winningsFromWinnings = sum (map countWinningCards newCardsZippedWithRest)
-   in Trace.traceShow
-        ( "card",
-          _num current,
-          "winnings",
-          winnings,
-          "total",
-          toInteger winnings + winningsFromWinnings,
-          "newCards",
-          map _num newCards,
-          "restNum",
-          map (\(c, cx) -> (_num c, map _num cx)) newCardsZippedWithRest
-        )
-        (toInteger winnings + winningsFromWinnings)
+   in (toInteger winnings + winningsFromWinnings)
 
 -- 21213
 part1 :: [Card] -> Integer
