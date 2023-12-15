@@ -8,13 +8,12 @@ import Data.Char (isDigit)
 import Data.List (foldl')
 import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
-import Debug.Trace (trace, traceShow)
-import GHC.Base (Multiplicity (Many))
+import qualified Debug.Trace as Trace
 
 main :: IO ()
 main =
   do
-    file <- readFile "inputs/day3_ex.txt"
+    file <- readFile "inputs/day3.txt"
     let sch = fileToSchematic file
     print $ part2 sch
 
@@ -49,7 +48,7 @@ part2 sch =
     f :: Integer -> (Int, Int) -> Integer
     f acc (i, j)
       | let c = (sch ! (i, j)) in c == '*' =
-          let sm = visitStar sch (i, j)
+          let sm = Trace.traceShow ("visitStar", (i, j)) visitStar sch (i, j)
            in (acc + sm)
       | otherwise = acc
 
@@ -57,47 +56,58 @@ visitStar :: Schematic -> (Int, Int) -> Integer
 visitStar sch (i, j) =
   let c = sch ! (i, j)
       numbersAround = findNumbersAround sch (i, j)
-   in if length numbersAround == 2
-        then foldl' (*) 1 numbersAround
-        else 0
+   in Trace.traceShow
+        ("numbersAround", numbersAround)
+        ( if length numbersAround == 2
+            then foldl' (*) 1 numbersAround
+            else 0
+        )
 
 findNumbersAround :: Schematic -> (Int, Int) -> [Integer]
 findNumbersAround sch (i, j) =
-  let visited = Map.insert (i, j) () Map.empty :: Visited
-      surrounding =
+  let surrounding =
         [ (i + is, j + js)
           | (is, js) <- [(x, y) | x <- [-1, 0, 1], y <- [-1, 0, 1]],
             (is, js) /= (0, 0)
         ]
-   in visit visited surrounding
+   in visit surrounding
   where
-    visit :: Visited -> [(Int, Int)] -> [Integer]
-    visit _ [] = []
-    visit visited ((i, j) : idxs') = visit' visited [] ((i, j) : idxs')
+    visit :: [(Int, Int)] -> [Integer]
+    visit [] = []
+    visit (idx : idxs) = visit' Map.empty [] (idx : idxs)
     visit' :: Visited -> [Integer] -> [(Int, Int)] -> [Integer]
     visit' visited acc [] = acc
-    visit' visited acc ((i, j) : idxs') =
+    visit' visited acc ((i, j) : idxs) =
       let visited' = Map.insert (i, j) () visited
-       in if Maybe.isJust (visited Map.!? (i, j))
+          isNotVisited = Maybe.isNothing (visited Map.!? (i, j))
+       in if isNotVisited
             then
-              let c = charAt sch (i, j)
-                  (visited'', num) = if isDigit c then discoverNumber visited' (i, j) else (visited', Maybe.Nothing)
+              let c = Trace.traceShow ("->> visiting new idx", (i, j), charAt sch (i, j)) charAt sch (i, j)
+                  (visited'', num) = if isDigit c then Trace.traceShow ("discovering number", c, (i, j)) discoverNumber visited' (i, j) else (visited', Maybe.Nothing)
                   acc' = if Maybe.isJust num then Maybe.fromJust num : acc else acc
-               in visit' visited'' acc' idxs'
-            else visit' visited' acc idxs'
+               in visit' visited'' acc' idxs
+            else Trace.traceShow ("->> already visited idx", (i, j), charAt sch (i, j), idxs) visit' visited' acc idxs
       where
         discoverNumber :: Visited -> (Int, Int) -> (Visited, Maybe.Maybe Integer)
         discoverNumber visited (i, j) =
           let (rightVisited, rightSide) = discoverRight visited "" (i, j)
               (leftVisited, leftSide) = discoverLeft visited "" (i, j)
-              visited' = Map.union rightVisited $ Map.union leftVisited $ Map.insert (i, j) () visited
+              visited' = Trace.traceShow ("left", leftSide, "right", rightSide) Map.union rightVisited $ Map.union leftVisited $ Map.insert (i, j) () visited
            in (visited', Maybe.Just (read (leftSide ++ [charAt sch (i, j)] ++ rightSide) :: Integer))
         discoverRight visited n (i, j)
-          | isDigit $ charAt sch (i, j + 1) = discoverRight (Map.insert (i, j + 1) () visited) (n ++ [charAt sch (i, j + 1)]) (i, j + 1)
-          | otherwise = (Map.insert (i, j) () visited, "")
+          | isDigit $ charAt sch (i, j + 1) = 
+              let idx = (i, j + 1)
+                  visited' = Map.insert idx () visited
+                  n' =  n ++ [charAt sch idx]
+               in discoverRight visited' n' idx
+          | otherwise = (Map.insert (i, j) () visited, n)
         discoverLeft visited n (i, j)
-          | isDigit $ charAt sch (i, j - 1) = discoverLeft (Map.insert (i, j - 1) () visited) (charAt sch (i, j + 1) : n) (i, j - 1)
-          | otherwise = (Map.insert (i, j) () visited, "")
+          | isDigit $ charAt sch (i, j - 1) =
+              let idx = (i, j - 1)
+                  visited' = Map.insert idx () visited
+                  n' = (charAt sch idx : n)
+               in discoverLeft visited' n' idx
+          | otherwise = (Map.insert (i, j) () visited, n)
 
 -- 533775
 part1 :: Schematic -> Integer
@@ -132,7 +142,7 @@ hasSurroundingSpecial sch (i, j) =
           | (i', j') <- surrounding,
             i' >= 0 && i' <= maxI && j' >= 0 && j' <= maxJ
         ]
-   in traceShow (i, j, surrounding, surrounding', map f surrounding') any f surrounding'
+   in Trace.traceShow (i, j, surrounding, surrounding', map f surrounding') any f surrounding'
   where
     f :: (Int, Int) -> Bool
     f (i, j) =
