@@ -25,7 +25,9 @@ type Mappings = Map.Map String Mapping
 type Seeds = [Integer]
 
 part1 :: (Seeds, Mappings) -> Integer
-part1 (seeds, mappings) = 0
+part1 (seeds, mappings) = 0 --
+
+
 
 parseFile :: String -> (Seeds, Mappings)
 parseFile file =
