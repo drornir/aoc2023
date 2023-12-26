@@ -1,5 +1,6 @@
 {
   "cSpell.words": [
     "foldl"
-  ]
+  ],
+  "python.analysis.typeCheckingMode": "basic"
 }
