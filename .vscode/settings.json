@@ -2,5 +2,6 @@
   "cSpell.words": [
     "foldl"
   ],
-  "python.analysis.typeCheckingMode": "basic"
+  "python.analysis.typeCheckingMode": "basic",
+  "editor.tabSize": 4
 }
