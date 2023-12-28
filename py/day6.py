@@ -9,7 +9,7 @@ class Game:
     distance: int
 
 
-def part1(game: Game) -> int:
+def count_wins(game: Game) -> int:
     wins = 0
 
     # game.time determines the maximum distance
@@ -39,7 +39,9 @@ def part1(game: Game) -> int:
     )
     print("lower_time_to_get_game_distance", lower_time_to_get_game_distance)
     print("best_holding_time", best_holding_time)
-    ints_between_best_and_record = best_holding_time - floor(lower_time_to_get_game_distance)
+    ints_between_best_and_record = best_holding_time - floor(
+        lower_time_to_get_game_distance
+    )
     # multiply by two (one for above, one for below best)
     wins += 2 * ints_between_best_and_record
 
@@ -68,20 +70,38 @@ def parseFile(content: str) -> List[Game]:
     return games
 
 
-def main():
+def parseFile2(content: str) -> Game:
+    games = parseFile(content=content)
+    time, distance = "", ""
+    for g in games:
+        time += str(g.time)
+        distance += str(g.distance)
+    return Game(
+        distance=int(distance),
+        time=int(time),
+    )
+
+
+# Time:      7  15   30
+# Distance:  9  40  200
+def part1():
     with open("inputs/day6.txt", "r") as f:
         games = parseFile(f.read())
     product = 1
     for game in games:
-        n = part1(game)
+        n = count_wins(game)
         print(game, n)
 
         product *= max(1, n)
     print("solution=", product)
 
 
-# Time:      7  15   30
-# Distance:  9  40  200
+def part2():
+    with open("inputs/day6.txt", "r") as f:
+        game = parseFile2(f.read())
+    solution = count_wins(game)
+    print("solution=", solution)
+
 
 if __name__ == "__main__":
-    main()
+    part2()
